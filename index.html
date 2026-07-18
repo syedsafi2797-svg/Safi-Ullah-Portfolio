@@ -51,6 +51,7 @@
       --muted: #7A8090;
       --accent: #E8553E;
       --green: #2ECC71;
+      --red: #E85D5D;
       --blue: #4A90D9;
     }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -244,6 +245,9 @@
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .submit-btn { width: 100%; padding: 14px; background: var(--gold); color: var(--dark); font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 3px; border: none; cursor: pointer; transition: all 0.3s; }
     .submit-btn:hover { background: var(--gold-light); }
+    .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .form-status { font-size: 12px; margin-top: 10px; min-height: 16px; letter-spacing: 0.5px; }
+    .form-status.error { color: var(--red); }
 
     /* FOOTER */
     footer { background: var(--dark); padding: 36px 64px; border-top: 1px solid rgba(212,168,67,0.08); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
@@ -791,20 +795,20 @@
         <div><div class="c-lbl">Availability</div><div class="c-val">Open for freelance & consulting projects</div></div>
       </div>
     </div>
-    <div class="contact-form">
+    <form class="contact-form" id="contactForm">
       <div class="form-row">
         <div class="form-group">
           <label>Your Name</label>
-          <input type="text" placeholder="Ahmed / Sarah / John..." />
+          <input type="text" id="cf-name" name="name" placeholder="Ahmed / Sarah / John..." required />
         </div>
         <div class="form-group">
           <label>Email Address</label>
-          <input type="email" placeholder="you@company.com" />
+          <input type="email" id="cf-email" name="email" placeholder="you@company.com" required />
         </div>
       </div>
       <div class="form-group">
         <label>Service Needed</label>
-        <select>
+        <select id="cf-service" name="service" required>
           <option value="" disabled selected>Select a service...</option>
           <option>Meta Ads (Facebook & Instagram)</option>
           <option>Google Ads (Search / YouTube)</option>
@@ -820,7 +824,7 @@
       </div>
       <div class="form-group">
         <label>Industry</label>
-        <select>
+        <select id="cf-industry" name="industry" required>
           <option value="" disabled selected>Your industry...</option>
           <option>Restaurant / Food</option>
           <option>Real Estate</option>
@@ -835,10 +839,16 @@
       </div>
       <div class="form-group">
         <label>Tell Me About Your Project</label>
-        <textarea placeholder="What are your goals? Current challenges? Monthly budget? Timeline?..."></textarea>
+        <textarea id="cf-message" name="message" placeholder="What are your goals? Current challenges? Monthly budget? Timeline?..." required></textarea>
       </div>
-      <button class="submit-btn" onclick="handleSubmit()">SEND MESSAGE →</button>
-    </div>
+      <!-- FormSubmit.co config fields -->
+      <input type="hidden" name="_subject" value="New project inquiry from safiullahportfolio.vercel.app" />
+      <input type="hidden" name="_captcha" value="false" />
+      <input type="hidden" name="_template" value="table" />
+      <input type="text" name="_honey" style="display:none" tabindex="-1" autocomplete="off" />
+      <button type="submit" class="submit-btn" id="cf-submit">SEND MESSAGE →</button>
+      <div class="form-status" id="cf-status"></div>
+    </form>
   </div>
 </section>
 
@@ -914,14 +924,53 @@
     });
   });
 
-  // Form submit
-  function handleSubmit() {
-    const btn = document.querySelector('.submit-btn');
-    btn.textContent = 'MESSAGE SENT ✓';
-    btn.style.background = 'var(--green)';
-    btn.style.color = 'var(--dark)';
-    setTimeout(() => { btn.textContent = 'SEND MESSAGE →'; btn.style.background = ''; btn.style.color = ''; }, 3000);
-  }
+  // Contact form submit — sends via FormSubmit.co (no backend needed)
+  const contactForm = document.getElementById('contactForm');
+  const cfSubmitBtn = document.getElementById('cf-submit');
+  const cfStatus = document.getElementById('cf-status');
+  const FORM_ENDPOINT = 'https://formsubmit.co/ajax/safiullah.cap@gmail.com';
+
+  contactForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    // Basic honeypot check (blocks simple bots)
+    if (contactForm.querySelector('[name="_honey"]').value) return;
+
+    cfSubmitBtn.disabled = true;
+    cfSubmitBtn.textContent = 'SENDING...';
+    cfStatus.textContent = '';
+    cfStatus.classList.remove('error');
+
+    const formData = new FormData(contactForm);
+
+    fetch(FORM_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: formData
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Request failed');
+        return res.json();
+      })
+      .then(() => {
+        cfSubmitBtn.textContent = 'MESSAGE SENT ✓';
+        cfSubmitBtn.style.background = 'var(--green)';
+        cfSubmitBtn.style.color = 'var(--dark)';
+        contactForm.reset();
+        setTimeout(() => {
+          cfSubmitBtn.textContent = 'SEND MESSAGE →';
+          cfSubmitBtn.style.background = '';
+          cfSubmitBtn.style.color = '';
+          cfSubmitBtn.disabled = false;
+        }, 4000);
+      })
+      .catch(() => {
+        cfSubmitBtn.disabled = false;
+        cfSubmitBtn.textContent = 'SEND MESSAGE →';
+        cfStatus.textContent = 'Something went wrong — please email safiullah.cap@gmail.com directly.';
+        cfStatus.classList.add('error');
+      });
+  });
 
   // Hamburger (mobile nav)
   document.getElementById('ham').addEventListener('click', () => {
