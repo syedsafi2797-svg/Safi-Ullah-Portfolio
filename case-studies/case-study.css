@@ -253,6 +253,18 @@ body {
   object-fit: cover;
   background: var(--dark);
 }
+
+/* ANTI-THEFT: block drag/save/selection on media */
+img, video {
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  pointer-events: auto;
+}
+img {
+  -webkit-touch-callout: none;
+}
 .gallery-item .caption {
   padding: 12px 16px;
   font-size: 12px;
